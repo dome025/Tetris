@@ -1,0 +1,485 @@
+
+<!DOCTYPE html>
+<html lang="de">
+	<head>
+		<meta charset="utf-8">
+		<title>Tetris</title>
+		<style>
+			table {
+				margin: auto;
+				border-collapse: collapse;
+			}
+			td {
+				border: 1px solid black;
+				width: 10px;
+				height: 10px;
+			}
+		</style>
+	</head>	
+	<body id="body">
+		<script>
+			class World {
+				blockedCells;
+				constructor(xStart, xEnd, yStart, yEnd, dropIntervall) {
+					this.xStart = xStart;
+					this.xEnd = xEnd;
+					this.yStart = yStart;
+					this.yEnd = yEnd;
+					this.width = this.xEnd + 1 - this.xStart;
+					this.height = this.yEnd + 1 - this.yStart;
+					this.dropIntervall = dropIntervall;
+					this.blockedCells = [];
+					this.createTable();
+					this.timeStart = new Date().getTime() / 1000
+				}
+
+				createTable() {
+					let body = document.getElementById('body');
+					let table = document.createElement('table');
+					let tbody = document.createElement('tbody');
+					for (let i = this.yStart; i <= this.yEnd; i++) {
+						let tr = document.createElement('tr');
+						tr.className = 'y-' + i;
+						for (let j = this.xStart; j <= this.xEnd; j++) {
+							let td = document.createElement('td');
+							td.className = 'x-' + j;
+							tr.appendChild(td);
+						}
+						tbody.appendChild(tr);
+					}
+					table.appendChild(tbody);
+					body.appendChild(table);
+				}
+
+				moveDown(intervalId, ...players) {
+					players.forEach((player) => {
+						if (player.pad !== null) {
+							let timeOver = (new Date().getTime() / 1000) - this.timeStart >= 300;
+							if (timeOver) {
+								this.clearWorld(player, !timeOver);
+								clearInterval(intervalId);
+								return;
+							}
+							let previousCenterY = player.pad.center.y;
+							player.pad.moveDown();
+							this.clearFullLine();
+							if (previousCenterY === player.pad.center.y) {
+								this.blockCells(player.pad);
+								let nextSpawnPosition = Pad.adjustPadPosition(player.bag.at(-1).configuration).spawnPositions;
+								let cannotSpawn = this.collidesWithBlockedCell(nextSpawnPosition)
+								if (cannotSpawn) {
+									this.clearWorld(player, cannotSpawn);
+									clearInterval(intervalId);
+									return;
+								}
+								player.spawnPad();
+							}
+						}
+					});
+				}
+
+				blockCells(pad) {
+					pad.blocks.forEach((block) => {
+						this.blockedCells.push(block);
+					});
+				}
+
+				collidesWithBlockedCell(blocks) {
+					let isBlocked = false;
+					for (let block of blocks) {
+						if (
+							this.blockedCells.some((blockedCell) => {
+								return block.x === blockedCell.x && block.y === blockedCell.y;
+							}, block)
+						) {
+							isBlocked = true;
+						};
+					}
+					return isBlocked;
+				}
+
+				collidesWithWorldEnd(blocks) {
+					return blocks.some((block) => {
+						return (
+							block.x < this.xStart ||
+							block.x > this.xEnd ||
+							block.y < this.yStart ||
+							block.y > this.yEnd
+						);
+					});
+				}
+
+				clearWorld(player, hasLost) {
+					this.blockedCells.forEach((cell) => {
+						cell.activeDomElement.style.backgroundColor = 'white';
+					});
+					player.pad.blocks.forEach((block) => {
+						block.decolorizeBlock();
+					});
+					player.pad.blocks = null;
+					player.pad = null;
+					let quarterHeight = Math.floor(this.height / 4);
+					let wordYStartPosition = this.yEnd - quarterHeight;
+					if (hasLost) {
+						let letters = [
+							{spawnPositions: [{x: 0, y: wordYStartPosition}, {x: 1, y: wordYStartPosition}, {x: 2, y: wordYStartPosition}, {x: 3, y: wordYStartPosition}, {x: 3, y: wordYStartPosition - 1}], center: {x: 1, y: 1}, color: 'blue'},
+							{spawnPositions: [{x: 1, y: wordYStartPosition - 3}, {x: 2, y: wordYStartPosition - 3}, {x: 1, y: wordYStartPosition - 4}, {x: 2, y: wordYStartPosition - 4}], center: {x: 1, y: 1}, color: 'red'},
+							{spawnPositions: [{x: 2, y: wordYStartPosition - 6}, {x: 2, y: wordYStartPosition - 7}, {x: 1, y: wordYStartPosition - 7}, {x: 1, y: wordYStartPosition - 8}], center: {x: 1, y: 1}, color: 'green'},
+							{spawnPositions: [{x: 0, y: wordYStartPosition - 11}, {x: 1, y: wordYStartPosition - 11}, {x: 2, y: wordYStartPosition - 11}, {x: 3, y: wordYStartPosition - 11}, {x: 1, y: wordYStartPosition - 10}, {x: 1, y: wordYStartPosition - 12}], center: {x: 1, y: 1}, color: 'orange'},
+						];
+						this.createEndGameScenery(letters);
+					} else {
+						let letters = [
+							{spawnPositions: [{x: 1, y: wordYStartPosition}, {x: 2, y: wordYStartPosition}, {x: 3, y: wordYStartPosition - 1}, {x: 1, y: wordYStartPosition - 2}, {x: 2, y: wordYStartPosition - 2}, {x: 3, y: wordYStartPosition - 3}, {x: 1, y: wordYStartPosition - 4}, {x: 2, y: wordYStartPosition - 4}], center: {x: 1, y: 1}, color: 'red'},
+							{spawnPositions: [{x: 1, y: wordYStartPosition - 6}, {x: 2, y: wordYStartPosition - 6}, {x: 1, y: wordYStartPosition - 7}, {x: 2, y: wordYStartPosition - 7}], center: {x: 1, y: 1}, color: 'green'},
+							{spawnPositions: [{x: 2, y: wordYStartPosition - 9}, {x: 3, y: wordYStartPosition - 9}, {x: 1, y: wordYStartPosition - 10}, {x: 2, y: wordYStartPosition - 11}, {x: 3, y: wordYStartPosition - 11}], center: {x: 1, y: 1}, color: 'blue'},
+						];
+						this.createEndGameScenery(letters);
+					}
+				}
+
+				createEndGameScenery(letters) {
+					letters.forEach((padConfig) => {
+						new Pad(padConfig.spawnPositions, padConfig.center, padConfig.color);
+					});
+				}
+
+				clearFullLine() {
+					if (this.blockedCells.length >= this.width) {
+						let blockedCellsInLine = [];
+						for (let i = 0; i <= this.yEnd; i++) {
+							blockedCellsInLine.push(this.blockedCells.filter(cell => cell.y === i));
+						}
+						blockedCellsInLine.forEach((line) => {
+							if (line.length === this.width) {
+								this.blockedCells.forEach((cell, index) => {
+									if (line.includes(cell)) {
+										cell.activeDomElement.style.backgroundColor = 'white';
+										delete this.blockedCells[index];
+									}
+								});
+								let cellsAboveClearedLine = this.blockedCells.filter(cell => cell.y < blockedCellsInLine.indexOf(line));
+								cellsAboveClearedLine.forEach((cell) => {cell.decolorizeBlock(); cell.moveDown();});
+								cellsAboveClearedLine.forEach((cell) => {cell.setActiveDomElement(); cell.paintBlock()});
+							}
+						});
+					}
+				}
+
+				adjustXStartPosition(x, padWidth, allowFloat = false) {
+					let adjustedX = x + ((this.width - padWidth) / 2)
+					return allowFloat ? adjustedX : Math.floor(adjustedX);
+				}
+			}
+			class Player {
+				pad;
+				constructor() {
+					this.fillBag();
+					this.spawnPad();
+					document.addEventListener('keydown', (keyboardEvent) => {
+						if (this.pad !== null) {
+							this.move(keyboardEvent);
+						}
+					});
+				}
+
+				spawnPad() {
+					this.pad = new (this.bag.pop());
+					if (this.bag.length === 0) {
+						this.fillBag();
+					}
+				}
+
+				fillBag() {
+					this.bag = [IPad, OPad, LPad, JPad, SPad, ZPad, TPad];
+					this.shuffleBag();
+				}
+
+				shuffleBag(array) {
+					let counter = this.bag.length;
+					while (counter > 0) {
+						let index = Math.floor(Math.random() * counter);
+						counter--;
+						let temp = this.bag[counter];
+						this.bag[counter] = this.bag[index];
+						this.bag[index] = temp;
+					}
+				}
+
+				move(keyboardEvent) {
+					switch(keyboardEvent.code) {
+						case 'KeyD':
+							this.pad.moveRight();
+							break;
+						case 'KeyA':
+							this.pad.moveLeft();
+							break;
+						case 'KeyW':
+							this.pad.rotateClockwise();
+							break;
+						case 'KeyS':
+							this.pad.rotateCounterClockwise();
+							break;
+					}
+				}
+			}
+			class Pad {
+				constructor(spawnPositions, center, color) {
+					this.blocks = [];
+					Pad.adjustPadPosition(spawnPositions, center);
+					this.center = center;
+					spawnPositions.forEach((spawnPosition) => {
+						this.blocks.push(new Block(spawnPosition.x, spawnPosition.y, color));
+					});
+				}
+
+				static adjustPadPosition(spawnPositions, center = null) {
+					let startX = Number.POSITIVE_INFINITY;
+					let endX = Number.NEGATIVE_INFINITY;
+					spawnPositions.forEach((cell) => {
+						startX = Math.min(startX, cell.x);
+						endX = Math.max(endX, cell.x);
+					});
+					let width = endX + 1 - startX;
+					if (center !== null) {
+						center.x = world.adjustXStartPosition(center.x, width, width % 2 === 0);
+					}
+					spawnPositions.forEach((spawnPosition) => {
+						spawnPosition.x = world.adjustXStartPosition(spawnPosition.x, width);
+					});
+					return {spawnPositions: spawnPositions, center: center};
+				}
+
+				moveCenterRight() {
+					this.center.x += 1;
+				}
+
+				moveCenterLeft() {
+					this.center.x -= 1;
+				}
+
+				moveCenterDown() {
+					this.center.y += 1;
+				}
+
+				rotateClockwise() {
+					let previousBlocks = [];
+					this.blocks.forEach((block) => {
+						previousBlocks.push({x: block.x, y: block.y});
+					});
+					this.blocks.forEach((block) => {
+						block.decolorizeBlock();
+						let x = this.center.y - block.y;
+						let y = block.x - this.center.x;
+						block.x = this.center.x + x;
+						block.y = this.center.y + y;
+					});
+					if (world.collidesWithBlockedCell(this.blocks) || world.collidesWithWorldEnd(this.blocks)) {
+						this.blocks.forEach((block, index) => {
+							block.x = previousBlocks[index].x;
+							block.y = previousBlocks[index].y
+						});
+					}
+					this.blocks.forEach((block) => {
+						block.setActiveDomElement();
+						block.paintBlock(); 
+					});
+				}
+
+				rotateCounterClockwise() {
+					let previousBlocks = [];
+					this.blocks.forEach((block) => {
+						previousBlocks.push({x: block.x, y: block.y});
+					});
+					this.blocks.forEach((block) => {
+						block.decolorizeBlock();
+						let x = block.y - this.center.y;
+						let y = this.center.x - block.x;
+						block.x = this.center.x + x;
+						block.y = this.center.y + y;
+					});
+					if (world.collidesWithBlockedCell(this.blocks) || world.collidesWithWorldEnd(this.blocks)) {
+						this.blocks.forEach((block, index) => {
+							block.x = previousBlocks[index].x;
+							block.y = previousBlocks[index].y
+						});
+					}
+					this.blocks.forEach((block) => {
+						block.setActiveDomElement();
+						block.paintBlock(); 
+					});
+				}
+
+				moveRight() {
+					let previousBlocks = [];
+					this.blocks.forEach((block) => {
+						previousBlocks.push({x: block.x, y: block.y});
+					});
+					this.blocks.forEach((block) => {
+						block.decolorizeBlock();
+						block.moveRight();
+					});
+					if (world.collidesWithBlockedCell(this.blocks) || world.collidesWithWorldEnd(this.blocks)) {
+						this.blocks.forEach((block, index) => {
+							block.x = previousBlocks[index].x;
+							block.y = previousBlocks[index].y
+						});
+					} else {
+						this.moveCenterRight();
+					}
+					this.blocks.forEach((block) => {
+						block.setActiveDomElement();
+						block.paintBlock();
+					});
+				}
+
+				moveLeft() {
+					let previousBlocks = [];
+					this.blocks.forEach((block) => {
+						previousBlocks.push({x: block.x, y: block.y});
+					});
+					this.blocks.forEach((block) => {
+						block.decolorizeBlock();
+						block.moveLeft();
+					});
+					if (world.collidesWithBlockedCell(this.blocks) || world.collidesWithWorldEnd(this.blocks)) {
+						this.blocks.forEach((block, index) => {
+							block.x = previousBlocks[index].x;
+							block.y = previousBlocks[index].y
+						});
+					} else {
+						this.moveCenterLeft();
+					}
+					this.blocks.forEach((block) => {
+						block.setActiveDomElement();
+						block.paintBlock();
+					});
+				}
+
+				moveDown() {
+					let previousBlocks = [];
+					this.blocks.forEach((block) => {
+						previousBlocks.push({x: block.x, y: block.y});
+					});
+					this.blocks.forEach((block) => {
+						block.decolorizeBlock();
+						block.moveDown();
+					});
+					if (world.collidesWithBlockedCell(this.blocks) || world.collidesWithWorldEnd(this.blocks)) {
+						this.blocks.forEach((block, index) => {
+							block.x = previousBlocks[index].x;
+							block.y = previousBlocks[index].y
+						});
+					} else {
+						this.moveCenterDown();
+					}
+					this.blocks.forEach((block) => {
+						block.setActiveDomElement();
+						block.paintBlock();
+					});
+				}
+			}
+			class Block {
+				activeDomElement;
+				constructor(x, y, color) {
+					this.x = x;
+					this.y = y;
+					this.color = color;
+					this.setActiveDomElement();
+					this.paintBlock();
+				}
+
+				setActiveDomElement() {
+					let tr = document.querySelector('tr.y-' + this.y);
+					this.activeDomElement = tr.querySelector('td.x-' + this.x);
+				}
+
+				moveRight() {
+					this.x = this.x + 1;
+				}
+
+				moveLeft() {
+					this.x = this.x - 1;
+				}
+
+				moveDown() {
+					this.y = this.y + 1;
+				}
+
+				decolorizeBlock() {
+					this.activeDomElement.style.backgroundColor = 'white';
+				}
+
+				paintBlock() {
+					this.activeDomElement.style.backgroundColor = this.color;
+				}
+			}
+			class IPad extends Pad {
+				constructor() {
+					super(IPad.configuration, {x:1.5, y:0.5}, 'lightblue');
+				}
+
+				static get configuration() {
+					return [{x:0, y:0}, {x:1, y:0}, {x:2, y:0}, {x:3, y:0}];
+				}
+			}
+			class LPad extends Pad {
+				constructor() {
+					super(LPad.configuration, {x:1, y:1}, 'orange');
+				}
+
+				static get configuration() {
+					return [{x:2, y:0}, {x:0, y:1}, {x:1, y:1}, {x:2, y:1}];
+				}
+			}
+			class JPad extends Pad {
+				constructor() {
+					super(JPad.configuration, {x:1, y:1}, 'darkblue');
+				}
+
+				static get configuration() {
+					return [{x:0, y:0}, {x:0, y:1}, {x:1, y:1}, {x:2, y:1}];
+				}
+			}
+			class OPad extends Pad {
+				constructor() {
+					super(OPad.configuration, {x:0.5, y:0.5}, 'yellow');
+				}
+
+				static get configuration() {
+					return [{x:0, y:0}, {x:1, y:0}, {x:0, y:1}, {x:1, y:1}];
+				}
+			}
+			class SPad extends Pad {
+				constructor() {
+					super(SPad.configuration, {x:1, y:1}, 'green');
+				}
+
+				static get configuration() {
+					return [{x:1, y:0}, {x:2, y:0}, {x:0, y:1}, {x:1, y:1}];
+				}
+			}
+			class ZPad extends Pad {
+				constructor() {
+					super(ZPad.configuration, {x:1, y:1}, 'red');
+				}
+
+				static get configuration() {
+					return [{x:0, y:0}, {x:1, y:0}, {x:1, y:1}, {x:2, y:1}];
+				}
+			}
+			class TPad extends Pad {
+				constructor() {
+					super(TPad.configuration, {x:1, y:1}, 'magenta');
+				}
+
+				static get configuration() {
+					return [{x:1, y:0}, {x:0, y:1}, {x:1, y:1}, {x:2, y:1}];
+				}
+			}
+			const world = new World(0, 9, 0, 30, 500);
+			let player = new Player();
+			let gameTickId = setInterval(() => {world.moveDown(gameTickId, player)}, world.dropIntervall);
+		</script>
+	</body>
+</html>

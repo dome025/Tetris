@@ -20,7 +20,7 @@
 		<script>
 			class World {
 				blockedCells;
-				constructor(xStart, xEnd, yStart, yEnd, dropIntervall) {
+				constructor(xStart, xEnd, yStart, yEnd, dropIntervall, color = 'white') {
 					this.xStart = xStart;
 					this.xEnd = xEnd;
 					this.yStart = yStart;
@@ -28,6 +28,7 @@
 					this.width = this.xEnd + 1 - this.xStart;
 					this.height = this.yEnd + 1 - this.yStart;
 					this.dropIntervall = dropIntervall;
+					this.color = color
 					this.blockedCells = [];
 					this.createTable();
 					this.timeStart = new Date().getTime() / 1000
@@ -111,7 +112,7 @@
 
 				clearWorld(player, hasLost) {
 					this.blockedCells.forEach((cell) => {
-						cell.activeDomElement.style.backgroundColor = 'white';
+						cell.activeDomElement.style.backgroundColor = this.color;
 					});
 					player.pad.blocks.forEach((block) => {
 						block.decolorizeBlock();
@@ -154,7 +155,7 @@
 							if (line.length === this.width) {
 								this.blockedCells.forEach((cell, index) => {
 									if (line.includes(cell)) {
-										cell.activeDomElement.style.backgroundColor = 'white';
+										cell.activeDomElement.style.backgroundColor = this.color;
 										delete this.blockedCells[index];
 									}
 								});
@@ -407,7 +408,7 @@
 				}
 
 				decolorizeBlock() {
-					this.activeDomElement.style.backgroundColor = 'white';
+					this.activeDomElement.style.backgroundColor = world.color;
 				}
 
 				paintBlock() {

@@ -6,21 +6,22 @@
 		<title>Tetris</title>
 		<style>
 			table {
-				margin: auto;
-				border-collapse: collapse;
+				margin: 40px auto;
+				border-collapse: separate;
+				border-spacing: 1px;
 			}
 			td {
-				border: 1px solid black;
-				width: 10px;
-				height: 10px;
+				height: 30px;
+				width: 30px;
+				background-color: #f4f3f3
 			}
 		</style>
-	</head>	
+	</head>
 	<body id="body">
 		<script>
 			class World {
 				blockedCells;
-				constructor(xStart, xEnd, yStart, yEnd, dropIntervall, color = 'white') {
+				constructor(xStart, xEnd, yStart, yEnd, dropIntervall, color = '#f4f3f3') {
 					this.xStart = xStart;
 					this.xEnd = xEnd;
 					this.yStart = yStart;
@@ -94,7 +95,7 @@
 							}, block)
 						) {
 							isBlocked = true;
-						};
+						}
 					}
 					return isBlocked;
 				}
@@ -283,7 +284,7 @@
 					}
 					this.blocks.forEach((block) => {
 						block.setActiveDomElement();
-						block.paintBlock(); 
+						block.paintBlock();
 					});
 				}
 
@@ -307,7 +308,7 @@
 					}
 					this.blocks.forEach((block) => {
 						block.setActiveDomElement();
-						block.paintBlock(); 
+						block.paintBlock();
 					});
 				}
 
@@ -417,7 +418,7 @@
 			}
 			class IPad extends Pad {
 				constructor() {
-					super(IPad.configuration, {x:1.5, y:0.5}, 'lightblue');
+					super(IPad.configuration, {x:1.5, y:0.5}, '#a0d1e1');
 				}
 
 				static get configuration() {
@@ -426,7 +427,7 @@
 			}
 			class LPad extends Pad {
 				constructor() {
-					super(LPad.configuration, {x:1, y:1}, 'orange');
+					super(LPad.configuration, {x:1, y:1}, '#ff8300');
 				}
 
 				static get configuration() {
@@ -435,7 +436,7 @@
 			}
 			class JPad extends Pad {
 				constructor() {
-					super(JPad.configuration, {x:1, y:1}, 'darkblue');
+					super(JPad.configuration, {x:1, y:1}, '#1563c8');
 				}
 
 				static get configuration() {
@@ -444,7 +445,7 @@
 			}
 			class OPad extends Pad {
 				constructor() {
-					super(OPad.configuration, {x:0.5, y:0.5}, 'yellow');
+					super(OPad.configuration, {x:0.5, y:0.5}, '#ffe300');
 				}
 
 				static get configuration() {
@@ -453,7 +454,7 @@
 			}
 			class SPad extends Pad {
 				constructor() {
-					super(SPad.configuration, {x:1, y:1}, 'green');
+					super(SPad.configuration, {x:1, y:1}, '#63c82a');
 				}
 
 				static get configuration() {
@@ -462,7 +463,7 @@
 			}
 			class ZPad extends Pad {
 				constructor() {
-					super(ZPad.configuration, {x:1, y:1}, 'red');
+					super(ZPad.configuration, {x:1, y:1}, '#e32626');
 				}
 
 				static get configuration() {
@@ -471,7 +472,7 @@
 			}
 			class TPad extends Pad {
 				constructor() {
-					super(TPad.configuration, {x:1, y:1}, 'magenta');
+					super(TPad.configuration, {x:1, y:1}, '#ff30ae');
 				}
 
 				static get configuration() {
